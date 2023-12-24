@@ -1,0 +1,49 @@
+name: Rewards Action
+
+on:
+  schedule:
+    - cron: '0 11 * * *' # runs everyday at 5 PM IST 
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+       pip install -r requirements.txt
+    - name: Main ID
+      run: |
+        python3 MicrosoftRewardsBot.py --headless --fast
+        
+    - name: Save logs.txt as an artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: logs
+        path: logs.txt
+    - name: Upload logs to Telegram
+      if: always()
+      env:
+        CHAT_ID:  
+        BOT_TOKEN:
+      run: |
+        curl -F chat_id=$CHAT_ID -F document=@logs.txt https://api.telegram.org/bot$BOT_TOKEN/sendDocument
+    - name: Remove logs.txt
+      if: always()
+      run: rm logs.txt
+
